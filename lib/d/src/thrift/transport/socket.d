@@ -18,7 +18,6 @@
  */
 module thrift.transport.socket;
 
-import core.stdc.errno: ECONNRESET;
 import core.thread : Thread;
 import core.time : dur, Duration;
 import std.array : empty;
@@ -250,6 +249,7 @@ class TSocket : TSocketBase {
       socket_ = null;
       // Need to throw a TTransportException to abide the TTransport API.
       import std.algorithm, std.range;
+      import std.array:array;
       throw new TTransportException(
         text("Failed to connect to ", host_, ":", port_, "."),
         TTransportException.Type.NOT_OPEN,
@@ -257,7 +257,7 @@ class TSocket : TSocketBase {
         new TCompoundOperationException(
           text(
             "All addresses tried failed (",
-            joiner(map!q{text(a[0], `: "`, a[1].msg, `"`)}(zip(addrs, errors)), ", "),
+            joiner(map!q{text(a[0], `: "`, a[1].msg, `"`)}(zip(addrs, errors)).array, ", "),
             ")."
           ),
           errors
@@ -424,7 +424,7 @@ protected:
 
   void setTimeout(SocketOption type, Duration value) {
     assert(type == SocketOption.SNDTIMEO || type == SocketOption.RCVTIMEO);
-    version (Win32) {
+    version (Windows) {
       if (value > dur!"hnsecs"(0) && value < dur!"msecs"(500)) {
         logError(
           "Socket %s timeout of %s ms might be raised to 500 ms on Windows.",

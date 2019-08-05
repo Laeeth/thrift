@@ -17,7 +17,7 @@
  * under the License.
  */
 module thrift.server.transport.base;
-
+version(NeedTServer):
 import thrift.base;
 import thrift.transport.base;
 import thrift.util.cancellation;
@@ -95,19 +95,31 @@ class TServerTransportException : TException {
 
   ///
   this(Type type, string file = __FILE__, size_t line = __LINE__, Throwable next = null) {
-    this(errorMsg(type), type, file, line, next);
+    import std.algorithm:predSwitch;
+    string msg = "TTransportException: ";
+
+    // cannot call constructor after labels in new dmd
+
+    msg ~= type.predSwitch!"a==b"(
+      		Type.UNKNOWN,            "Unknown server transport exception",
+      		Type.NOT_LISTENING,      "Server transport not listening",
+      		Type.ALREADY_LISTENING,  "Server transport already listening",
+                Type.RESOURCE_FAILED,    "An underlying resource failed",
+	                                 "(Invalid exception type)"
+		);
+    this(msg, type, file, line, next);
   }
 
   ///
   this(string msg, string file = __FILE__, size_t line = __LINE__,
-    Throwable next = null)
+    Throwable next = cast(Throwable) null)
   {
     this(msg, Type.UNKNOWN, file, line, next);
   }
 
   ///
   this(string msg, Type type, string file = __FILE__, size_t line = __LINE__,
-    Throwable next = null)
+    Throwable next = cast(Throwable) null)
   {
     super(msg, file, line, next);
     type_ = type;
@@ -120,18 +132,5 @@ class TServerTransportException : TException {
 
 protected:
   Type type_;
-
-private:
-  string errorMsg(Type type) {
-    string msg = "TTransportException: ";
-    switch (type) {
-      case Type.UNKNOWN: msg ~= "Unknown server transport exception"; break;
-      case Type.NOT_LISTENING: msg ~= "Server transport not listening"; break;
-      case Type.ALREADY_LISTENING: msg ~= "Server transport already listening"; break;
-      case Type.RESOURCE_FAILED: msg ~= "An underlying resource failed"; break;
-      default: msg ~= "(Invalid exception type)"; break;
-    }
-    return msg;
-  }
 }
 

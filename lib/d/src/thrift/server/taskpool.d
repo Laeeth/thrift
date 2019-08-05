@@ -17,7 +17,7 @@
  * under the License.
  */
 module thrift.server.taskpool;
-
+version(NeedTServer):
 import core.sync.condition;
 import core.sync.mutex;
 import std.exception : enforce;
@@ -268,9 +268,7 @@ protected:
         }
       }
     } catch (TTransportException ttx) {
-      if (ttx.type() != TTransportException.Type.END_OF_FILE) {
-        logError("Client died unexpectedly: %s", ttx);
-      }
+      logError("Client died: %s", ttx);
     } catch (Exception e) {
       logError("Uncaught exception: %s", e);
     }

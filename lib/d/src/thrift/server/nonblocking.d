@@ -35,7 +35,7 @@
 // This really should use a D non-blocking I/O library, once one becomes
 // available.
 module thrift.server.nonblocking;
-
+version(NeedTServer):
 import core.atomic : atomicLoad, atomicStore, atomicOp;
 import core.exception : onOutOfMemoryError;
 import core.memory : GC;
@@ -623,8 +623,8 @@ private {
             to!string(event_get_version()), to!string(event_base_get_method(eventBase_)));
 
           // Register the event for the listening socket.
-          listenEvent_ = event_new(eventBase_, listenSocket_.handle,
-            EV_READ | EV_PERSIST | EV_ET,
+          listenEvent_ = event_new(eventBase_, cast(int)listenSocket_.handle,
+            cast(short) (EV_READ | EV_PERSIST | EV_ET),
             assumeNothrow(&TNonblockingServer.acceptConnectionsCallback),
             cast(void*)server_);
           if (event_add(listenEvent_, null) == -1) {
@@ -638,8 +638,8 @@ private {
         completionReceiveSocket_ = pair[1];
 
         // Register an event for the task completion notification socket.
-        completionEvent_ = event_new(eventBase_, completionReceiveSocket_.handle,
-          EV_READ | EV_PERSIST | EV_ET, assumeNothrow(&completedCallback),
+        completionEvent_ = event_new(eventBase_, cast(int)completionReceiveSocket_.handle,
+          cast(short)(EV_READ | EV_PERSIST | EV_ET), assumeNothrow(&completedCallback),
           cast(void*)this);
 
         if (event_add(completionEvent_, null) == -1) {
@@ -874,6 +874,7 @@ private {
      *   s = The server this connection is part of.
      */
     void init(Socket socket, IOLoop loop) {
+      import thrift.server.base;
       // TODO: This allocation could be avoided.
       socket_ = new TSocket(socket);
 
@@ -893,14 +894,14 @@ private {
       callsSinceResize_ = 0;
 
       factoryInputTransport_ =
-        server_.inputTransportFactory.getTransport(inputTransport_);
+        server_.inputTransportFactory_.getTransport(inputTransport_);
       factoryOutputTransport_ =
-        server_.outputTransportFactory.getTransport(outputTransport_);
+        server_.outputTransportFactory_.getTransport(outputTransport_);
 
       inputProtocol_ =
-        server_.inputProtocolFactory.getProtocol(factoryInputTransport_);
+        server_.inputProtocolFactory_.getProtocol(factoryInputTransport_);
       outputProtocol_ =
-        server_.outputProtocolFactory.getProtocol(factoryOutputTransport_);
+        server_.outputProtocolFactory_.getProtocol(factoryOutputTransport_);
 
       if (server_.eventHandler) {
         connectionContext_ =
@@ -908,7 +909,7 @@ private {
       }
 
       auto info = TConnectionInfo(inputProtocol_, outputProtocol_, socket_);
-      processor_ = server_.processorFactory.getProcessor(info);
+      processor_ = server_.processorFactory_.getProcessor(info);
     }
 
     ~this() {
@@ -1212,10 +1213,10 @@ private {
 
       if (!event_) {
         // If the event was not already allocated, do it now.
-        event_ = event_new(loop_.eventBase_, socket_.socketHandle,
+        event_ = event_new(loop_.eventBase_, cast(int)socket_.socketHandle,
           eventFlags_, assumeNothrow(&workSocketCallback), cast(void*)this);
       } else {
-        event_assign(event_, loop_.eventBase_, socket_.socketHandle,
+        event_assign(event_, loop_.eventBase_, cast(int)socket_.socketHandle,
           eventFlags_, assumeNothrow(&workSocketCallback), cast(void*)this);
       }
 

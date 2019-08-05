@@ -17,7 +17,7 @@
  * under the License.
  */
 module thrift.server.threaded;
-
+version(NeedTServer):
 import core.thread;
 import std.variant : Variant;
 import thrift.base;
@@ -173,9 +173,7 @@ private class WorkerThread : Thread {
         }
       }
     } catch (TTransportException ttx) {
-      if (ttx.type() != TTransportException.Type.END_OF_FILE) {
-        logError("Client died unexpectedly: %s", ttx);
-      }
+      logError("Client died: %s", ttx);
     } catch (Exception e) {
       logError("Uncaught exception: %s", e);
     }

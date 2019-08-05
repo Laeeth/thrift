@@ -213,7 +213,7 @@ private:
     if (ssl_ !is null) return;
     ssl_ = context_.createSSL();
 
-    SSL_set_fd(ssl_, socketHandle);
+    SSL_set_fd(ssl_, cast(int)socketHandle);
     int rc;
     if (serverSide_) {
       rc = SSL_accept(ssl_);
@@ -249,12 +249,8 @@ class TSSLContext {
     }
     count_++;
 
-    static if (OPENSSL_VERSION_NUMBER >= 0x1010000f) { // OPENSSL_VERSION_AT_LEAST(1, 1)) {
-        ctx_ = SSL_CTX_new(TLS_method());
-    } else {
-        ctx_ = SSL_CTX_new(SSLv23_method());
-        SSL_CTX_set_options(ctx_, SSL_OP_NO_SSLv2);
-    }
+    ctx_ = SSL_CTX_new(SSLv23_method());
+    SSL_CTX_set_options(ctx_, SSL_OP_NO_SSLv2);
     SSL_CTX_set_options(ctx_, SSL_OP_NO_SSLv3);   // THRIFT-3164
     enforce(ctx_, getSSLException("SSL_CTX_new"));
     SSL_CTX_set_mode(ctx_, SSL_MODE_AUTO_RETRY);
@@ -452,7 +448,6 @@ private:
     }
     initialized_ = true;
 
-   static if (OPENSSL_VERSION_NUMBER < 0x1010000f) { // OPENSSL_VERSION_BEFORE(1, 1)) {
     SSL_library_init();
     SSL_load_error_strings();
 
@@ -470,14 +465,12 @@ private:
     CRYPTO_set_dynlock_create_callback(assumeNothrow(&dynlockCreateCallback));
     CRYPTO_set_dynlock_lock_callback(assumeNothrow(&dynlockLockCallback));
     CRYPTO_set_dynlock_destroy_callback(assumeNothrow(&dynlockDestroyCallback));
-   }
   }
 
   static void cleanupOpenSSL() {
     if (!initialized_) return;
 
     initialized_ = false;
-   static if (OPENSSL_VERSION_NUMBER < 0x1010000f) { // OPENSSL_VERSION_BEFORE(1, 1)) {
     CRYPTO_set_locking_callback(null);
     CRYPTO_set_dynlock_create_callback(null);
     CRYPTO_set_dynlock_lock_callback(null);
@@ -485,7 +478,6 @@ private:
     CRYPTO_cleanup_all_ex_data();
     ERR_free_strings();
     ERR_remove_state(0);
-   }
   }
 
   static extern(C) {

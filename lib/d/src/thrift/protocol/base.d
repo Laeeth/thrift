@@ -260,7 +260,7 @@ protected:
  * in generated code.
  */
 void skip(Protocol)(Protocol prot, TType type) if (is(Protocol : TProtocol)) {
-  switch (type) {
+  final switch (type) {
     case TType.BOOL:
       prot.readBool();
       break;
@@ -324,9 +324,9 @@ void skip(Protocol)(Protocol prot, TType type) if (is(Protocol : TProtocol)) {
       }
       prot.readSetEnd();
       break;
-
-    default:
-      throw new TProtocolException(TProtocolException.Type.INVALID_DATA);
+    case TType.STOP: goto case;
+    case TType.VOID:
+      assert(false, "Invalid field type passed.");
   }
 }
 
