@@ -24,8 +24,5 @@ CUR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Runs the async test in both SSL and non-SSL mode.
 ${CUR}/async_test > /dev/null || exit 1
 echo "Non-SSL tests done."
-
-# THRIFT-4905: disabled the following test as it deadlocks / hangs
-# ${CUR}/async_test --ssl > /dev/null || exit 1
-# echo "SSL tests done."
-echo "THRIFT-4905: SSL tests are disabled.  Fix them."
+${CUR}/async_test --ssl > /dev/null || exit 1
+echo "SSL tests done."

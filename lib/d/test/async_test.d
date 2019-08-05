@@ -104,18 +104,18 @@ void main(string[] args) {
   if (ssl) {
     auto clientSSLContext = new TSSLContext();
     with (clientSSLContext) {
-      authenticate = true;
       ciphers = "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH";
-      loadTrustedCertificates("../../../test/keys/CA.pem");
+      authenticate = true;
+      loadTrustedCertificates("./trusted-ca-certificate.pem");
     }
     clientTransportFactory = new TAsyncSSLSocketFactory(clientSSLContext);
 
     serverSSLContext = new TSSLContext();
     with (serverSSLContext) {
       serverSide = true;
+      loadCertificate("./server-certificate.pem");
+      loadPrivateKey("./server-private-key.pem");
       ciphers = "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH";
-      loadCertificate("../../../test/keys/server.crt");
-      loadPrivateKey("../../../test/keys/server.key");
     }
   } else {
     clientTransportFactory = new TBufferedTransportFactory;

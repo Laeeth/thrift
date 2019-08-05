@@ -37,7 +37,7 @@ import std.array : empty;
 import std.algorithm : min, max;
 import std.concurrency;
 import std.conv : to;
-import std.datetime : dur, Duration;
+import std.datetime : dur, Duration,msecs;
 import std.datetime.stopwatch : AutoStart, StopWatch;
 import std.exception;
 import std.stdio : File;

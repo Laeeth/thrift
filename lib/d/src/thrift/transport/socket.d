@@ -220,6 +220,7 @@ class TSocket : TSocketBase {
    * Connects the socket.
    */
   override void open() {
+	import std.array:array;
     if (isOpen) return;
 
     enforce(!host_.empty, new TTransportException(
@@ -257,7 +258,7 @@ class TSocket : TSocketBase {
         new TCompoundOperationException(
           text(
             "All addresses tried failed (",
-            joiner(map!q{text(a[0], `: "`, a[1].msg, `"`)}(zip(addrs, errors)), ", "),
+            joiner(map!q{text(a[0], `: "`, a[1].msg, `"`)}(zip(addrs, errors)).array, ", "),
             ")."
           ),
           errors
@@ -424,7 +425,7 @@ protected:
 
   void setTimeout(SocketOption type, Duration value) {
     assert(type == SocketOption.SNDTIMEO || type == SocketOption.RCVTIMEO);
-    version (Win32) {
+    version (Windows) {
       if (value > dur!"hnsecs"(0) && value < dur!"msecs"(500)) {
         logError(
           "Socket %s timeout of %s ms might be raised to 500 ms on Windows.",
