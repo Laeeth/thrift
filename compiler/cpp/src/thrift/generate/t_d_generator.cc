@@ -45,6 +45,9 @@ using std::vector;
 
 static const string endl = "\n"; // avoid ostream << std::endl flushes
 
+
+
+
 /**
  * D code generator.
  *
@@ -71,6 +74,16 @@ public:
   }
 
 protected:
+
+  std::string fix_d_reserved_word(std::string name) {
+    for(const std::string* p=d_reserved_words; *p != ""; p++)
+    {
+      if (*p == name)
+        return name.append("_");
+    }
+    return name;
+  }
+
   void init_generator() override {
     // Make output directory
     MKDIR(get_out_dir().c_str());
@@ -132,7 +145,7 @@ protected:
       vector<t_const*>::iterator c_iter;
       for (c_iter = consts.begin(); c_iter != consts.end(); ++c_iter) {
         this->emit_doc(*c_iter, f_consts);
-        string name = (*c_iter)->get_name();
+        string name = fix_d_reserved_word((*c_iter)->get_name());
         t_type* type = (*c_iter)->get_type();
         indent(f_consts) << "immutable(" << render_type_name(type) << ") " << name << ";" << endl;
       }
@@ -169,7 +182,7 @@ protected:
     vector<t_enum_value*> constants = tenum->get_constants();
 
     this->emit_doc(tenum, f_types_);
-    string enum_name = tenum->get_name();
+    string enum_name = fix_d_reserved_word(tenum->get_name());
     f_types_ << indent() << "enum " << enum_name << " {" << endl;
 
     indent_up();
@@ -200,27 +213,27 @@ protected:
     string svc_name = tservice->get_name();
 
     // Service implementation file includes
-    string f_servicename = package_dir_ + svc_name + ".d";
+    string f_servicename = package_dir_ + fix_d_reserved_word(svc_name) + ".d";
     ofstream_with_content_based_conditional_update f_service;
     f_service.open(f_servicename.c_str());
-    f_service << autogen_comment() << "module " << render_package(*program_) << svc_name << ";"
+    f_service << autogen_comment() << "module " << fix_d_reserved_word(render_package(*program_)) << svc_name << ";"
               << endl << endl;
 
     print_default_imports(f_service);
 
-    f_service << "import " << render_package(*get_program()) << program_name_ << "_types;" << endl;
+    f_service << "import " << fix_d_reserved_word(render_package(*get_program())) << program_name_ << "_types;" << endl;
 
     t_service* extends_service = tservice->get_extends();
     if (extends_service != NULL) {
-      f_service << "import " << render_package(*(extends_service->get_program()))
-                << extends_service->get_name() << ";" << endl;
+      f_service << "import " << fix_d_reserved_word(render_package(*(extends_service->get_program())))
+                << fix_d_reserved_word(extends_service->get_name()) << ";" << endl;
     }
 
     f_service << endl;
 
     string extends = "";
     if (tservice->get_extends() != NULL) {
-      extends = " : " + render_type_name(tservice->get_extends());
+      extends = " : " + fix_d_reserved_word(render_type_name(tservice->get_extends()));
     }
 
     this->emit_doc(tservice, f_service);
@@ -428,16 +441,16 @@ private:
     const vector<t_field*>& members = tstruct->get_members();
 
     if (is_exception) {
-      indent(out) << "class " << tstruct->get_name() << " : TException {" << endl;
+      indent(out) << "class " << fix_d_reserved_word(tstruct->get_name()) << " : TException {" << endl;
     } else {
-      indent(out) << "struct " << tstruct->get_name() << " {" << endl;
+      indent(out) << "struct " << fix_d_reserved_word(tstruct->get_name()) << " {" << endl;
     }
     indent_up();
 
     // Declare all fields.
     vector<t_field*>::const_iterator m_iter;
     for (m_iter = members.begin(); m_iter != members.end(); ++m_iter) {
-      indent(out) << render_type_name((*m_iter)->get_type()) << " " << (*m_iter)->get_name() << ";"
+      indent(out) << render_type_name((*m_iter)->get_type()) << " " << fix_d_reserved_word((*m_iter)->get_name()) << ";"
                   << endl;
     }
 
@@ -462,7 +475,7 @@ private:
         }
         out << endl;
 
-        indent(out) << "TFieldMeta(`" << (*m_iter)->get_name() << "`, " << (*m_iter)->get_key();
+        indent(out) << "TFieldMeta(`" << fix_d_reserved_word((*m_iter)->get_name()) << "`, " << (*m_iter)->get_key();
 
         t_const_value* cv = (*m_iter)->get_value();
         t_field::e_req req = (*m_iter)->get_req();
@@ -499,7 +512,7 @@ private:
       } else {
         out << ", ";
       }
-      out << render_type_name((*f_iter)->get_type(), true) << " " << (*f_iter)->get_name();
+      out << render_type_name((*f_iter)->get_type(), true) << " " << fix_d_reserved_word((*f_iter)->get_name());
     }
 
     out << ")";
@@ -737,6 +750,22 @@ private:
   ofstream_with_content_based_conditional_update f_header_;
 
   string package_dir_;
+
+  protected: const string d_reserved_words[200] = {
+    "abstract", "__FILE__", "__gshared", "__LINE__", "__parameters", "__traits", "__vector",
+    "alias", "align", "asm", "assert", "auto", "body", "bool", "break", "byte", "case", "cast",
+    "catch", "cdouble", "cent", "cfloat", "char", "class", "const", "continue", "creal", "dchar",
+    "debug", "default", "delegate", "delete", "deprecated", "do", "double", "else", "enum",
+    "export", "extern", "false", "final", "finally", "float", "for", "foreach", "foreach_reverse",
+    "function", "goto", "idouble", "if", "ifloat", "immutable", "import", "in", "inout", "int",
+    "interface", "invariant", "ireal", "is", "lazy", "long", "macro", "mixin", "module", "new",
+    "nothrow", "null", "out", "override", "package", "pragma", "private", "protected", "public",
+    "pure", "real", "ref", "return", "scope", "shared", "short", "static", "struct", "super",
+    "switch", "synchronized", "template", "this", "throw", "true", "try", "typedef", "typeid",
+    "typeof", "ubyte", "ucent", "uint", "ulong", "union", "unittest", "ushort", "version",
+    "void", "volatile", "wchar", "while", "with",""
+  };
+
 };
 
 THRIFT_REGISTER_GENERATOR(d, "D", "")
